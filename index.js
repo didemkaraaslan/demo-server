@@ -15,12 +15,29 @@ const {
   QUERY_CREATE_PRODUCTS_TABLE,
   QUERY_CREATE_CATEGORIES_TABLE,
   mysqlAuth,
+  EVENT_FETCH_ALL_PRODUCTS,
+  EVENT_FETCH_ALL_CATEGORIES,
+  EVENT_ADD_NEW_PRODUCT,
+  EVENT_ADD_NEW_CATEGORY,
+  EVENT_DELETE_PRODUCT,
+  EVENT_DELETE_CATEGORY
 } = require("./Constants.js");
 
 const port = process.env.PORT || 3000;
-
 const app = express();
-app.use(cors());
+
+const whitelist = ['http://localhost:3001', 'http://www.apirequest.io']
+const corsOptions = {
+  credentials: true,
+   origin: function (origin, callback) {
+     if (whitelist.indexOf(origin) !== -1) {
+       callback(null, true)
+     } else {
+       callback(new Error(`${origin} not allowed by CORS`))
+     }
+   }
+}
+app.use(cors(corsOptions));
 app.use(bodyParser.json())
 
 const server = http.createServer(app);
@@ -64,11 +81,12 @@ mysqlConnection.connect(err => {
     mysqlConnection.query(QUERY_SELECT_EVERYTHING_FROM_PRODUCTS, (err, rows, fields) => {
       if(err) {
         console.error(err);
-        res.json({
+        return res.json({
           message: `Failure! We couldn't bring products list.`
         });
       } else {
-        res.json(rows);
+        io.emit(EVENT_FETCH_ALL_PRODUCTS, rows);
+        return res.json(rows);
       }
     })
   });
@@ -83,6 +101,7 @@ mysqlConnection.connect(err => {
           message: `Failure! Product ${product.productName} couldnt be saved.`
         });
       } else {
+          io.emit(EVENT_ADD_NEW_PRODUCT, product);
           res.json({
             status: 200,
             message: `Success! Product ${product.productName} with the insertId of ${result.insertId} is saved.`
@@ -101,6 +120,7 @@ mysqlConnection.connect(err => {
           message: `Failure! Product ${product.productName}  couldn't be deleted.`
         });
       } else {
+          io.emit(EVENT_DELETE_PRODUCT, productId);
           res.json({
             status: 200,
             message: `Success! Product ${product.productName} with the insertId of ${result.insertId} is deleted.`
@@ -122,6 +142,7 @@ app.get("/api/categories", (req, res) => {
         message: `Failure! We couldn't bring categories list.`
       });
     } else {
+      io.emit(EVENT_FETCH_ALL_CATEGORIES, rows);
       res.json(rows);
     }
   })
@@ -137,6 +158,7 @@ app.post("/api/categoryManagement", (req, res) => {
         message: `Failure! Category ${category.categoryName}  couldn't be saved.`
       });
     } else {
+        io.emit(EVENT_ADD_NEW_CATEGORY, { categoryId: result.insertId, categoryName: category.categoryName });
         res.json({
           status: 200,
           message: `Success! Category ${category.categoryName} with the insertId of ${result.insertId} is saved.`
@@ -152,12 +174,13 @@ app.delete("/api/categoryManagement", (req, res) => {
     if(err) {
       console.error(err);
       res.json({
-        message: `Failure! Category ${category.categoryName}  couldn't be deleted.`
+        message: `Failure! Category with the id of ${categoryId}  couldn't be deleted.`
       });
     } else {
+        io.emit(EVENT_DELETE_CATEGORY, categoryId);
         res.json({
           status: 200,
-          message: `Success! Category ${category.categoryName} with the insertId of ${result.insertId} is deleted.`
+          message: `Success! Category  with the insertId of ${result.insertId} is deleted.`
         });
     }
   });
@@ -174,8 +197,14 @@ app.delete("/api/categoryManagement", (req, res) => {
 
 
 
-app.listen(port, () => {
+server.listen(port, () => {
   console.log(`Listening on port: ${port}`);
 });
 
-module.exports = mysqlConnection;
+/*
+app.use(function(req, res, next) {
+    res.header("Access-Control-Allow-Origin", "*");
+    res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+    next();
+});
+*/
