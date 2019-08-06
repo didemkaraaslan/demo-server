@@ -28,9 +28,13 @@ const server = http.createServer(app);
 // Create socket client
 const io = socketIO(server);
 
-io.on("connection", socket => {
-  console.log("socker connect")
-});
+io.on('connection', socket => {
+  console.log('User connected')
+
+  socket.on('disconnect', () => {
+    console.log('user disconnected')
+  })
+})
 
 // Create MySQL connection
 const mysqlConnection = mysql.createConnection({ ...mysqlAuth });
@@ -60,8 +64,11 @@ mysqlConnection.connect(err => {
     mysqlConnection.query(QUERY_SELECT_EVERYTHING_FROM_PRODUCTS, (err, rows, fields) => {
       if(err) {
         console.error(err);
+        res.json({
+          message: `Failure! We couldn't bring products list.`
+        });
       } else {
-        res.send(rows);
+        res.json(rows);
       }
     })
   });
@@ -72,8 +79,14 @@ mysqlConnection.connect(err => {
     mysqlConnection.query(QUERY_INSERT_INTO_PRODUCTS_TABLE, product, function(err, result) {
       if(err) {
         console.error(err);
+        res.json({
+          message: `Failure! Product ${product.productName} couldnt be saved.`
+        });
       } else {
-          res.send(req.body)
+          res.json({
+            status: 200,
+            message: `Success! Product ${product.productName} with the insertId of ${result.insertId} is saved.`
+          });
       }
     });
   });
@@ -84,8 +97,14 @@ mysqlConnection.connect(err => {
     mysqlConnection.query(QUERY_DELETE_FROM_PRODUCTS_TABLE + `${productId}`, function(err, result) {
       if(err) {
         console.error(err);
+        res.json({
+          message: `Failure! Product ${product.productName}  couldn't be deleted.`
+        });
       } else {
-          res.send(req.body)
+          res.json({
+            status: 200,
+            message: `Success! Product ${product.productName} with the insertId of ${result.insertId} is deleted.`
+          });
       }
     });
 
@@ -99,8 +118,11 @@ app.get("/api/categories", (req, res) => {
   mysqlConnection.query(QUERY_SELECT_EVERYTHING_FROM_CATEGORIES, (err, rows, fields) => {
     if(err) {
       console.error(err);
+      res.json({
+        message: `Failure! We couldn't bring categories list.`
+      });
     } else {
-      res.send(rows);
+      res.json(rows);
     }
   })
 });
@@ -111,8 +133,14 @@ app.post("/api/categoryManagement", (req, res) => {
   mysqlConnection.query(QUERY_INSERT_INTO_CATEGORIES_TABLE, category, function(err, result) {
     if(err) {
       console.error(err);
+      res.json({
+        message: `Failure! Category ${category.categoryName}  couldn't be saved.`
+      });
     } else {
-        res.send(req.body)
+        res.json({
+          status: 200,
+          message: `Success! Category ${category.categoryName} with the insertId of ${result.insertId} is saved.`
+        });
     }
   });
 });
@@ -123,8 +151,14 @@ app.delete("/api/categoryManagement", (req, res) => {
   mysqlConnection.query(QUERY_DELETE_FROM_CATEGORIES_TABLE + `${categoryId}`, function(err, result) {
     if(err) {
       console.error(err);
+      res.json({
+        message: `Failure! Category ${category.categoryName}  couldn't be deleted.`
+      });
     } else {
-        res.send(req.body)
+        res.json({
+          status: 200,
+          message: `Success! Category ${category.categoryName} with the insertId of ${result.insertId} is deleted.`
+        });
     }
   });
 

@@ -18,7 +18,7 @@ const QUERY_CREATE_CATEGORIES_TABLE = `create table if not exists categories(
 const mysqlAuth = {
   host: 'localhost',
   user: 'root',
-  password: 'XXXXXXXXXXXXXXXXX',
+  password: 'bumpintoyoU1_',
   database: 'productsDb'
 };
 
